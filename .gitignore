@@ -1,0 +1,6 @@
+/data/*.sqlite
+/data/*.sqlite-shm
+/data/*.sqlite-wal
+/data/*.zip
+.DS_Store
+.vscode/
