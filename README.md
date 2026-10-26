@@ -1,37 +1,38 @@
-### Mapa parcel - Okres Jičín
+# Mapa parcel - Okres Jičín
 
-Webová aplikace pro zobrazení parcel v okrese Jičín (město Jičín a 4 okolní KÚ: Valdice, Holín, Staré Místo, Železnice). 
+Interaktivní webová aplikace pro vizualizaci a vyhledávání katastrálních parcel v okrese Jičín (město Jičín a okolní katastrální území: Valdice, Holín, Staré Místo, Železnice) nad otevřenými daty ČÚZK.
 
-### Požadavky
+## Požadavky
 
-* PHP 8.1+ s povolenými rozšířeními v `php.ini`: `pdo_sqlite`, `zip`, `curl`
-* Webový prohlížeč Chrome nebo Firefox
+- PHP 8.1+ s povolenými rozšířeními v `php.ini`: `pdo_sqlite`, `zip`, `curl`
+- Moderní webový prohlížeč (Chrome, Firefox, Edge)
 
-### Spuštění aplikace
+## Spuštění aplikace
 
-1. Stažení dat z ČÚZK a vytvoření SQLite databáze:
-`php scripts/import.php`
-2. Spuštění PHP serveru:
-`php -S localhost:8000 -t public`
-3. Otevření v prohlížeči:
-http://localhost:8000
+1. Stažení dat z ČÚZK INSPIRE a inicializace SQLite databáze:
+```bash
+php scripts/import.php
+```
 
-### Krátký zápisník
+2. Spuštění vestavěného PHP serveru:
+```bash
+php -S localhost:8000 -t public
+```
 
-### Jaká jsem udělal rozhodnutí
 
-* Data parcel jsem předem stáhl z ČÚZK INSPIRE do lokální SQLite databáze, aby se mapa nesekala čekáním na odpověď ze serveru ČÚZK při každém posunu.
-* Při oddálení mapy pod zoom 16 se zobrazuje jen obrázková vrstva z ČÚZK WMS. Klikací parcely z databáze se načítají až od zoomu 16 a jen pro aktuálně viditelnou část obrazovky.
-* Už načtené parcely zůstávají uložené v paměti prohlížeče, takže se při posunu mapy zpět nebo při filtrování nemusí stahovat znovu.
-* Projekt jsem vytvářel ve spolupráci s AI, přičemž jsem vše průběžně testoval, ověřoval na reálných datech a upravoval, aby aplikace fungovala správně a plynule.
+3. Otevření aplikace v prohlížeči:
+`http://localhost:8000`
 
-### Co mě překvapilo
+## Architektura a technické řešení
 
-* V souborech INSPIRE GML jsou k dispozici hranice, čísla parcel a výměra, ale ne podrobnější údaje z katastru. Parcely proto v mapě rozlišuji podle čísla na stavební s předponou `st.` a pozemkové, a do detailu jsem přidal tlačítko, které otevře konkrétní parcelu přímo v Nahlížení do KN a na Mapy.cz.
-* Při kontrole mapy jsem narazil na to, že v KÚ Staré Místo se všechny parcely zobrazují jako pozemkové, protože toto území má v katastru jednotnou číselnou řadu a nepoužívá předponu `st.`.
+* **Lokální SQLite databáze a BBox indexace:** Data parcel (hranice polygonů, parcelní čísla a výměry) se stahují z ČÚZK INSPIRE (formát GML v souřadnicovém systému ETRS89) do lokální SQLite databáze v režimu WAL. Tím je zajištěna okamžitá odezva API bez čekání na externí servery ČÚZK při pohybu mapou.
+* **Kombinace WMS a vektorové vrstvy:** Při oddálení mapy pod zoom 16 se zobrazuje rastrová vrstva z ČÚZK WMS. Interaktivní vektorové parcely z databáze se načítají od zoomu 16 pouze pro aktuálně viditelný výřez obrazovky (Bounding Box) a vykreslují se přes HTML5 Canvas.
+* **Klientská cache v prohlížeči:** Již načtené bloky mapy zůstávají uložené v paměti klienta (`Map` / `Set`), takže se při posunu mapy zpět nebo při přepínání filtrů nemusí stahovat ze serveru znovu.
+* **Klasifikace a napojení na katastr:** Protože soubory INSPIRE GML obsahují geometrii, čísla parcel a výměru bez podrobnějších údajů z RÚIAN, aplikace rozlišuje parcely podle označení na stavební (předpona `st.`) a pozemkové (s výjimkou KÚ s jednotnou číselnou řadou, jako je Staré Místo). V detailu parcely je přímé prokliknutí na konkrétní pozemek v portálu Nahlížení do KN a na Mapy.cz.
 
-### Co bych s více časem řešil jinak
+## Možnosti dalšího rozšíření
 
-* Doplnil bych všechna zbývající katastrální území v okrese Jičín.
-* Nastavil bych automatickou aktualizaci databáze (např. 1× denně v noci přes cron).
-* Propojil bych data s RÚIAN pro zobrazení přesného druhu pozemku a upravil rozhraní pro mobilní zařízení.
+* Doplnění zbývajících katastrálních území v celém okrese Jičín.
+* Automatická aktualizace databáze pomocí plánované úlohy (cron).
+* Propojení s daty RÚIAN pro zobrazení přesného druhu pozemku a způsobu využití.
+
